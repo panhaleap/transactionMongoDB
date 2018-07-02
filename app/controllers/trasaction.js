@@ -61,6 +61,9 @@ const Singer = require("../models/singer");
     
         }
 });
+
+
+
 router.use((req, res, next) => { // run for any & all requests
     console.log("Connection to the API.."); // set up logging for every API call
     next(); // ..to the next routes from here..

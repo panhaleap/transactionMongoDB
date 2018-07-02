@@ -11,6 +11,6 @@ const SingerSchema = new Schema({
                 required: true,
                 default: true
               }
-});
+}, { collection: 'dlSingerHistory' }, { timestamps: {} });
 
 module.exports = mongoose.model('dlSinger', SingerSchema);

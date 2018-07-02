@@ -12,7 +12,7 @@ const historySchema = new Schema({
     required: true,
     default: true
   }
-}, { timestamps: {} });
+}, { collection: 'dlSingerHistory' }, { timestamps: {} });
 
 module.exports = mongoose.model('dlSingerHistory', historySchema);
 

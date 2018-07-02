@@ -26,6 +26,7 @@ mongoose.connect("mongodb://jason:12345678@35.229.111.221:27017/tenh_products");
 const songRouter = require("./app/controllers/songs");
 const singerRouter = require("./app/controllers/singers");
 const transactionRouter = require("./app/controllers/trasaction");
+const singleTransactionRouter = require("./app/controllers/singleTransaction");
 
 router.use(function(req, res, next) {
   console.log("Something is happening.");
@@ -38,6 +39,7 @@ router.use(function(req, res, next) {
 app.use("/api/v1", singerRouter);
 app.use("/api/v1/songs", songRouter);
 app.use("/api/v1/transaction", transactionRouter);
+app.use("/api/v1/singleTransaction", singleTransactionRouter);
 
 // app.use("/api", router);
 
