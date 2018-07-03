@@ -1,7 +1,23 @@
 const express = require("express");
 const mongodb = require("mongodb");
+const assert = require("assert");
+const MongoClient = mongodb.MongoClient;
 const router = express.Router();
-// const db = require('./database');
+let db, client;
+const url = 'mongodb://jason:12345678@35.229.111.221:27017/tenh_products';
+const dbName = 'tenh_products';
+MongoClient.connect(url, { useNewUrlParser: true }, async (err, clientDB) => {
+  console.log('terertttss', err);
+  // assert.equal(null, err);
+  console.log("Connected successfully to server");
+  client = clientDB;
+  db = client.db(dbName);
+  // const collection = db.collection('documents');
+  // await collection.insert({name: 'test'});
+  // client.close();
+});
+
+
 // db = mongodb.startSession({retryWrites: true, causalConsistency: true}).getDatabase(db.getName());
 function runTransactionWithRetry(txnFunc, session) {
   while (true) {
@@ -14,7 +30,7 @@ function runTransactionWithRetry(txnFunc, session) {
         error.hasOwnProperty("errorLabels") &&
         error.errorLabels.includes("TransientTransactionError")
       ) {
-        print("TransientTransactionError, retrying transaction ...");
+        console.log("TransientTransactionError, retrying transaction ...");
         continue;
       } else {
         throw error;
@@ -29,7 +45,7 @@ function commitWithRetry(session) {
   while (true) {
     try {
       session.commitTransaction(); // Uses write concern set at transaction start.
-      print("Transaction committed.");
+      console.log("Transaction committed.");
       break;
     } catch (error) {
       // Can retry commit
@@ -37,10 +53,10 @@ function commitWithRetry(session) {
         error.hasOwnProperty("errorLabels") &&
         error.errorLabels.includes("UnknownTransactionCommitResult")
       ) {
-        print("UnknownTransactionCommitResult, retrying commit operation ...");
+        console.log("UnknownTransactionCommitResult, retrying commit operation ...");
         continue;
       } else {
-        print("Error during commit ...");
+        console.log("Error during commit ...");
         throw error;
       }
     }
@@ -49,86 +65,78 @@ function commitWithRetry(session) {
 
 // Updates two collections in a transactions
 
-function updateSingerInfo(session) {
-  singerCollection = session.getDatabase("transaction").dlSinger;
-  singerHistoryCollection = session.getDatabase("transaction").dlSingerHistory;
+async function updateSingerInfo (session) {
+  const cDoc = db.collection('documents');
+  const cTransaction = db.collection('transaction');
 
+  // singerCollection = session.getDatabase("transaction").dlSinger;
+  // singerHistoryCollection = session.getDatabase("transaction").dlSingerHistory;
+  
   session.startTransaction({
     readConcern: { level: "snapshot" },
     writeConcern: { w: "majority" }
   });
-  const singerId = "5b30687c3d862b1148d1c3b5";
+  // const singerId = "5b30687c3d862b1148d1c3b5";
 
   try {
-    singerCollection.updateOne(
-      { _id: ObjectId(singerId), isActive: true },
-      { $set: { isActive: false } }
-    );
-    employeesCollection.updateOne(
-      { employee: 3 },
-      { $set: { status: "Inactive" } }
-    );
-    eventsCollection.insertOne({
-      singer: singerId,
-      hisStatus: { new: false, old: true }
-    });
+    console.log('terst');
+    await cDoc.insertOne({name: 'dara'}, {session});
+    await cTransaction.insertOne({ name: 'kaka'}, {session});
+    console.log('terst2222');
   } catch (error) {
-    print("Caught exception during transaction, aborting.");
+    // console.log("Caught exception during transaction, aborting.");
     session.abortTransaction();
     throw error;
   }
   //
-  try {
-    employeesCollection.updateOne(
-      { employee: 3 },
-      { $set: { status: "Inactive" } }
-    );
-    eventsCollection.insertOne({
-      employee: 3,
-      status: { new: "Inactive", old: "Active" }
-    });
-  } catch (error) {
-    print("Caught exception during transaction, aborting.");
-    session.abortTransaction();
-    throw error;
-  }
+  // try {
+  //   employeesCollection.updateOne({ employee: 3 },{ $set: { status: "Inactive" } });
+  //   eventsCollection.insertOne({employee: 3,status: { new: "Inactive", old: "Active" }});
+  // } catch (error) {
+  //   console.log("Caught exception during transaction, aborting.");
+  //   session.abortTransaction();
+  //   throw error;
+  // }
   //
 
   commitWithRetry(session);
 }
 
-// Start a session.
-session = express.session({ mode: "primary" });
 
-try {
-  runTransactionWithRetry(updateSingerInfo, session);
-} catch (error) {
-  // Do something with error
-} finally {
-  session.endSession();
-}
 
 router.route("/").get(async (req, res) => {
+  console.log('rout session start');
+  const session = client.startSession({ mode: "primary" });
+  try {
+    await runTransactionWithRetry(updateSingerInfo, session);
+  } catch (error) {
+    console.log('test ', error);
+    // Do something with error
+  } finally {
+    session.endSession();
+  }
   res.status(200).json({ message: "Hello World!" });
 });
 
 ///
 
-// router.post('/',function(req,res,next){
-//   username=req.body.username;
-//   password=req.body.password;
 
-//   db.conn(function(err, database) {
-//     if (err) {
-//       res.sendStatus(500);
-//       console.log(err);
-//       return;
-//     }
+// var url =  "mongodb://jason:12345678@35.229.111.221:27017/";//"mongodb://localhost:27017/";
 
-//     database.collection('users').findOne({'username':username, 'password':password}, function(err, docs){
-//       //do something
-//     });
-//   });
+// MongoClient.connect(url, function(err, db) {
+//   if (err) throw err;
+//   var dbo = db.db("tenh_products");
+//   // Start a session.
+//   session = db.getMongo().startSession( { mode: "primary" } );
+//   return console.log(session);
+
+//   try {
+//     runTransactionWithRetry(updateSingerInfo, session);
+//   } catch (error) {
+//     // Do something with error
+//   } finally {
+//     session.endSession();
+//   }
 // });
 
 ///
